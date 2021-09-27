@@ -41,9 +41,9 @@ fn main() -> anyhow::Result<()> {
         if i == 0 {
             info!("Starting the first child process.");
         } else if i+1 % 10 == 0 {
-            info!("Starting child process number {}", i);
+            info!("Starting child process number {} of {}", i+1, target_count);
         } else {
-            debug!("Starting child process number {}", i);
+            debug!("Starting child process number {} of {}", i+1, target_count);
         }
 
         // We're going to start a child process that tails /dev/null.
