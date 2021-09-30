@@ -58,12 +58,13 @@ fn main() -> anyhow::Result<()> {
 
 fn spawn_child_processes(target_count: usize, cpid_vec: &mut Vec<Child>) -> anyhow::Result<()> {
     for i in 0..target_count {
+        let printable_count = i + 1;
         if i == 0 {
             info!("Starting the first child process.");
-        } else if i+1 % 10 == 0 {
-            info!("Starting child process number {} of {}", i+1, target_count);
+        } else if printable_count % 10 == 0 {
+            info!("Starting child process number {} of {}", printable_count, target_count);
         } else {
-            debug!("Starting child process number {} of {}", i+1, target_count);
+            debug!("Starting child process number {} of {}", i, target_count);
         }
 
         // We're going to start a child process that tails /dev/null.
@@ -79,9 +80,21 @@ fn spawn_child_processes(target_count: usize, cpid_vec: &mut Vec<Child>) -> anyh
             .with_context(|| format!("Attempting to spawn child task "));
 
         match child_res {
-            Ok(child) => cpid_vec.push(child),
+            Ok(child) => {
+                debug!("Child process {} successfully spawned.", child.id());
+                cpid_vec.push(child);
+            }
             Err(e) => {
                 error!("Error encountered during latest child process spawn attempt. Error received: {:?}", e);
+
+                if env::var("RUST_BACKTRACE").is_ok() {
+                    debug!("Error backtrace:\n\n{:?}", e.backtrace())
+                }
+                debug!("Full error chain following:");
+                for cause in e.chain() {
+                    debug!("!! ERROR CHAIN ENTRY: {:?}", cause);
+                }
+
                 return Err(anyhow::anyhow!(e))
             }
         }
@@ -127,6 +140,7 @@ fn kill_spawned_processes(child_vec:&mut Vec<Child>) -> anyhow::Result<()> {
             }
         }
     }
+    info!("All spawned child processes have been successfully terminated. Proceeding to exit.");
 
     Ok(())
 }
